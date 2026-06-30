@@ -1,15 +1,25 @@
-html {
-    background-color: rgba(27, 38, 54, 1);
-    text-align: center;
-    color: white;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --pt-bg: #f6f3ee;
+    --pt-ink: #211f1d;
+    --pt-sidebar: #111111;
+    --pt-card: #ffffff;
+    --pt-border: #e6e1da;
+    --pt-radius: 0.5rem;
+    --pt-shadow: 0 18px 45px rgba(20, 20, 20, 0.08);
 }
 
 body {
     margin: 0;
-    color: white;
     font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
     "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
+    background: #f6f3ee;
+    color: #211f1d;
+    -webkit-font-smoothing: antialiased;
 }
 
 @font-face {
@@ -20,7 +30,85 @@ body {
     url("assets/fonts/nunito-v16-latin-regular.woff2") format("woff2");
 }
 
-#app {
+#root {
     height: 100vh;
-    text-align: center;
+}
+
+@layer components {
+    .app-shell {
+        @apply flex h-screen min-h-0 text-neutral-900;
+        background: var(--pt-bg);
+    }
+
+    .sidebar {
+        @apply flex w-64 shrink-0 flex-col border-r border-neutral-200 px-4 py-5 text-white;
+        background: var(--pt-sidebar);
+    }
+
+    .sidebar-link {
+        @apply flex h-12 w-full items-center justify-between rounded-lg px-3 text-left transition;
+    }
+
+    .sidebar-link-active {
+        @apply bg-white text-neutral-950;
+        box-shadow: var(--pt-shadow);
+    }
+
+    .sidebar-link-idle {
+        @apply text-neutral-300 hover:bg-neutral-800 hover:text-white;
+    }
+
+    .card {
+        @apply rounded-lg border bg-white p-5;
+        border-color: var(--pt-border);
+        box-shadow: var(--pt-shadow);
+    }
+
+    .button {
+        @apply inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-400;
+    }
+
+    .button-primary {
+        @apply bg-neutral-950 text-white hover:bg-neutral-800;
+    }
+
+    .button-secondary {
+        @apply border border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50;
+    }
+
+    .button-ghost {
+        @apply border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50;
+    }
+
+    .badge {
+        @apply inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold;
+    }
+
+    .badge-green {
+        @apply bg-emerald-100 text-emerald-900;
+    }
+
+    .badge-amber {
+        @apply bg-amber-100 text-amber-900;
+    }
+
+    .badge-rose {
+        @apply bg-rose-100 text-rose-900;
+    }
+
+    .badge-neutral {
+        @apply bg-neutral-100 text-neutral-700;
+    }
+
+    .empty-state {
+        @apply mt-5 flex min-h-[220px] items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center;
+    }
+
+    .toggle-card {
+        @apply flex min-h-[116px] cursor-pointer items-start justify-between gap-4 rounded-lg border border-neutral-200 px-4 py-4 transition hover:border-neutral-300 hover:bg-neutral-50;
+    }
+
+    .path-row {
+        @apply grid gap-2 rounded-lg bg-neutral-50 px-3 py-2 md:grid-cols-[150px_minmax(0,1fr)_auto] md:items-center;
+    }
 }
