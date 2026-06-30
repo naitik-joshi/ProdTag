@@ -18,6 +18,13 @@ ProdTag is a Wails v2 desktop app with a Go backend/helper direction and a React
   - Settings copy now clearly distinguishes Listening from Muted behavior.
   - Loading state now uses ProdTag-specific copy.
   - Path rows now wrap long paths and include disabled Copy/Open placeholders.
+- Phase 1.2: Frontend tooling modernization and Phase 1 polish.
+  - Vite, the React Vite plugin, Tailwind CSS, and TypeScript were modernized while the app is still small.
+  - Tailwind moved from the v3 PostCSS/config-file setup to the v4 Vite plugin setup.
+  - The old Tailwind/PostCSS config files and direct PostCSS/autoprefixer dev dependencies were removed.
+  - TypeScript config now uses modern Vite-friendly bundler module resolution.
+  - `.DS_Store` files are ignored.
+  - Manual `wails build` passed after the Codex-side packaging warning: bindings, frontend compile, application compile, packaging, self-signing, and `build/bin/ProdTag.app` creation all completed successfully.
 
 ## Current UX Direction
 
@@ -31,8 +38,10 @@ ProdTag is a Wails v2 desktop app with a Go backend/helper direction and a React
 - Also update `docs/ROADMAP.md` with checkboxes or completion notes when a phase/subphase changes.
 - When a dev server is started for verification, stop it before finishing unless the user explicitly asks to leave it running.
 - Final responses should include what changed, what to test, build/test results, and a brief retrospective with suggestions or risks.
+- Put project markdown under `docs/` when it is documentation/progress context; use root only for repo-standard files like `README.md`.
 
 ## Next Up
 
 - Phase 2: Sound Library.
 - Start with drag-and-drop import UI and the sound record flow, but avoid audio playback/helper work until later phases.
+- Packaging note: the earlier Codex-side macOS `UTType` linker/package warning is considered resolved for now because the user manually ran `wails build` successfully and produced `build/bin/ProdTag.app`.

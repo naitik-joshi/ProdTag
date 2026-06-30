@@ -26,6 +26,9 @@ Done when:
 Notes:
 
 - Phase 1.1 added a component/page split, basic design tokens, clearer Settings copy, loading state, and path row polish.
+- Phase 1.2 modernized frontend tooling to Vite 8, Tailwind 4 through `@tailwindcss/vite`, React Vite plugin 5, and TypeScript 6.
+- Phase 1.2 removed obsolete Tailwind 3/PostCSS config files after the Tailwind 4 build passed.
+- Manual `wails build` passed after Phase 1.2 and produced `build/bin/ProdTag.app`; the earlier Codex-side macOS packaging warning is considered resolved for now.
 - Dev servers should be stopped after Codex verification so the user can run them manually.
 
 ## Phase 2 — Sound Library
