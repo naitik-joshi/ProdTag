@@ -57,13 +57,17 @@ body {
     }
 
     .card {
-        @apply rounded-lg border bg-white p-5;
+        @apply rounded-lg border bg-white p-5 transition;
         border-color: var(--pt-border);
         box-shadow: var(--pt-shadow);
     }
 
     .button {
-        @apply inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-400;
+        @apply inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-400 disabled:active:scale-100;
+    }
+
+    .icon-button {
+        @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition hover:bg-neutral-50 hover:text-neutral-950 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400 disabled:active:scale-100;
     }
 
     .button-primary {
@@ -130,6 +134,28 @@ body {
 
     .toast {
         @apply mt-4 flex items-center justify-between gap-3 rounded-lg bg-neutral-50 px-3 py-2;
+        animation: toast-in 160ms ease-out;
+    }
+
+    .progress-panel {
+        @apply mt-4 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-3;
+    }
+
+    .progress-track {
+        @apply mt-2 h-2 overflow-hidden rounded-full bg-neutral-200;
+    }
+
+    .progress-fill {
+        @apply h-full rounded-full bg-neutral-950 transition-all;
+    }
+
+    .progress-fill-indeterminate {
+        width: 38%;
+        animation: progress-indeterminate 1.1s ease-in-out infinite;
+    }
+
+    .spinner {
+        animation: spinner-rotate 700ms linear infinite;
     }
 
     .sound-card-actions {
@@ -139,10 +165,11 @@ body {
     .sound-action-menu {
         @apply absolute right-0 top-12 z-20 grid min-w-44 gap-1 rounded-lg border border-neutral-200 bg-white p-1;
         box-shadow: var(--pt-shadow);
+        animation: menu-in 140ms ease-out;
     }
 
     .sound-action-menu-item {
-        @apply rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:text-neutral-400;
+        @apply flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:text-neutral-400;
     }
 
     .modal-backdrop {
@@ -152,5 +179,53 @@ body {
     .modal-panel {
         @apply w-full max-w-md rounded-lg border border-neutral-200 bg-white p-5;
         box-shadow: var(--pt-shadow);
+    }
+}
+
+@keyframes spinner-rotate {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes menu-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes progress-indeterminate {
+    0% {
+        transform: translateX(-110%);
+    }
+    100% {
+        transform: translateX(280%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
     }
 }

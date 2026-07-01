@@ -33,7 +33,7 @@ Notes:
 
 ## Phase 2 — Sound Library
 
-Status: Phase 2.5 complete except playlists/groups.
+Status: Phase 2.6 complete except playlists/groups.
 
 Goal: Let users import, preview, and manage sounds.
 
@@ -60,6 +60,8 @@ Notes:
 - Phase 2.5 added FFmpeg/ffprobe detection, duration probing, manual per-sound normalization, Normalize all, processed WAV output, processed-file preview preference, and processed-file cleanup on delete.
 - Phase 2.5 kept normalization manual so missing FFmpeg does not block import, preview, rename, or delete.
 - Phase 2.5 moved secondary row actions behind an ellipsis menu to keep sound cards calm as actions grow.
+- Phase 2.6 added Lucide icons, icon-aware buttons, accessible icon buttons, reusable spinner/progress components, clearer audio-tool status rows, and more stable sound-card action states.
+- Phase 2.6 intentionally deferred one-click FFmpeg/dependency installation to a later setup/integrations phase.
 
 ## Phase 3 — Helper + Playback
 
@@ -138,6 +140,7 @@ Tasks:
 - [ ] Add app icons and basic branding.
 - [ ] Add empty-state UI and helpful tooltips.
 - [ ] Add error handling for missing FFmpeg/helper/shell issues.
+- [ ] Add guided dependency setup or one-click install flow for external tools like FFmpeg.
 - [ ] Add README with install/use instructions.
 - [ ] Add GitHub release build workflow if possible.
 - [ ] Build/test on macOS, Windows, and Linux.

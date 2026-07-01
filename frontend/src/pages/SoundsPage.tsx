@@ -1,5 +1,21 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {
+  CheckCircle2,
+  Clock3,
+  Download,
+  FileAudio,
+  MoreHorizontal,
+  Pencil,
+  Play,
+  RefreshCw,
+  ScanSearch,
+  Square,
+  Trash2,
+  Upload,
+  Wrench,
+  XCircle,
+} from 'lucide-react';
+import {
   CheckAudioTools,
   DeleteSound,
   DeleteSounds,
@@ -7,7 +23,6 @@ import {
   ImportSoundPaths,
   ProbeSoundDuration,
   ProcessSound,
-  ProcessSounds,
   RenameSound,
   SelectSoundFiles,
 } from '../../wailsjs/go/main/App';
@@ -17,6 +32,8 @@ import {Button} from '../components/Button';
 import {Card} from '../components/Card';
 import {ConfirmDialog} from '../components/ConfirmDialog';
 import {EmptyState} from '../components/EmptyState';
+import {IconButton} from '../components/IconButton';
+import {ProgressBar} from '../components/ProgressBar';
 import {Toast, ToastState} from '../components/Toast';
 import {AppConfig, AudioToolsStatus, ConfigSnapshot, SoundRecord} from '../types/app';
 import {classNames} from '../utils/classNames';
@@ -31,6 +48,13 @@ type ConfirmState =
   | {kind: 'bulk'; ids: string[]}
   | null;
 
+type ProgressState = {
+  label: string;
+  current?: number;
+  total?: number;
+  indeterminate?: boolean;
+};
+
 export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -42,7 +66,12 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
   const [toolsStatus, setToolsStatus] = useState<AudioToolsStatus | null>(null);
   const [processingIds, setProcessingIds] = useState<string[]>([]);
+  const [probingIds, setProbingIds] = useState<string[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ProgressState | null>(null);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSavingRename, setIsSavingRename] = useState(false);
   const dragDepth = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -119,12 +148,15 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
   async function importPaths(paths: string[], source: 'drop' | 'picker') {
     setIsImporting(true);
     setToast({message: source === 'drop' ? 'Drop received' : 'Preparing import...', tone: 'neutral'});
+    setProgress({label: 'Preparing import...', current: 0, total: paths.length});
     try {
       let latestSnapshot: ConfigSnapshot | null = null;
       for (let index = 0; index < paths.length; index += 1) {
+        setProgress({label: `Importing ${index + 1} of ${paths.length}`, current: index, total: paths.length});
         setToast({message: `Importing ${index + 1}/${paths.length}...`, tone: 'amber'});
         latestSnapshot = (await ImportSoundPaths([paths[index]])) as ConfigSnapshot;
         onConfigUpdated(latestSnapshot);
+        setProgress({label: `Imported ${index + 1} of ${paths.length}`, current: index + 1, total: paths.length});
       }
       if (latestSnapshot) {
         setToast({message: `Imported ${paths.length} sound${paths.length === 1 ? '' : 's'}`, tone: 'green'});
@@ -133,6 +165,7 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
       setToast({message: failureMessage(error), tone: 'rose'});
     } finally {
       setIsImporting(false);
+      window.setTimeout(() => setProgress(null), 800);
     }
   }
 
@@ -176,6 +209,7 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
       return;
     }
 
+    setIsSavingRename(true);
     try {
       const snapshot = await RenameSound({id: sound.id, name});
       onConfigUpdated(snapshot as ConfigSnapshot);
@@ -184,6 +218,8 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
       setToast({message: 'Sound renamed', tone: 'green'});
     } catch (error) {
       setToast({message: failureMessage(error), tone: 'rose'});
+    } finally {
+      setIsSavingRename(false);
     }
   }
 
@@ -202,6 +238,7 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
       return;
     }
 
+    setIsDeleting(true);
     try {
       if (confirmState.kind === 'single') {
         if (playingId === confirmState.sound.id) {
@@ -224,11 +261,13 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
       setToast({message: failureMessage(error), tone: 'rose'});
     } finally {
       setConfirmState(null);
+      setIsDeleting(false);
     }
   }
 
   async function probeDuration(sound: SoundRecord) {
     setOpenMenuId(null);
+    setProbingIds((current) => (current.includes(sound.id) ? current : [...current, sound.id]));
     setToast({message: 'Reading duration...', tone: 'amber'});
     try {
       const snapshot = await ProbeSoundDuration(sound.id);
@@ -241,12 +280,15 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
       setToast({message: 'Duration updated', tone: 'green'});
     } catch (error) {
       setToast({message: failureMessage(error), tone: 'rose'});
+    } finally {
+      setProbingIds((current) => current.filter((id) => id !== sound.id));
     }
   }
 
   async function normalizeSound(sound: SoundRecord) {
     setOpenMenuId(null);
     setProcessingIds((current) => (current.includes(sound.id) ? current : [...current, sound.id]));
+    setProgress({label: 'Processing sound...', indeterminate: true});
     setToast({message: `Normalizing ${sound.name}...`, tone: 'amber'});
     try {
       const snapshot = await ProcessSound(sound.id);
@@ -261,6 +303,7 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
       setToast({message: failureMessage(error), tone: 'rose'});
     } finally {
       setProcessingIds((current) => current.filter((id) => id !== sound.id));
+      window.setTimeout(() => setProgress(null), 800);
     }
   }
 
@@ -270,12 +313,19 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
       return;
     }
 
-    setProcessingIds(ids);
+    setIsBulkProcessing(true);
+    setProgress({label: `Normalizing 0 of ${ids.length}`, current: 0, total: ids.length});
     setToast({message: `Normalizing ${ids.length} sound${ids.length === 1 ? '' : 's'}...`, tone: 'amber'});
     try {
-      const snapshot = await ProcessSounds(ids);
-      onConfigUpdated(snapshot as ConfigSnapshot);
-      const failedCount = (snapshot as ConfigSnapshot).config.sounds.filter((sound) => ids.includes(sound.id) && sound.status === 'failed').length;
+      let latestSnapshot: ConfigSnapshot | null = null;
+      for (let index = 0; index < ids.length; index += 1) {
+        setProcessingIds([ids[index]]);
+        setProgress({label: `Normalizing ${index + 1} of ${ids.length}`, current: index, total: ids.length});
+        latestSnapshot = (await ProcessSound(ids[index])) as ConfigSnapshot;
+        onConfigUpdated(latestSnapshot);
+        setProgress({label: `Normalized ${index + 1} of ${ids.length}`, current: index + 1, total: ids.length});
+      }
+      const failedCount = latestSnapshot?.config.sounds.filter((sound) => ids.includes(sound.id) && sound.status === 'failed').length ?? 0;
       if (failedCount > 0) {
         setToast({message: `${failedCount} sound${failedCount === 1 ? '' : 's'} could not be normalized`, tone: 'rose'});
         return;
@@ -285,6 +335,8 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
       setToast({message: failureMessage(error), tone: 'rose'});
     } finally {
       setProcessingIds([]);
+      setIsBulkProcessing(false);
+      window.setTimeout(() => setProgress(null), 800);
     }
   }
 
@@ -326,6 +378,7 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
   }
 
   const canNormalize = toolsStatus?.ffmpegAvailable;
+  const isProcessing = isBulkProcessing || processingIds.length > 0;
 
   return (
     <div className="space-y-5">
@@ -339,21 +392,23 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             {config.sounds.length > 0 && (
-              <Button disabled={!canNormalize || processingIds.length > 0} onClick={normalizeAllSounds} variant="ghost">
+              <Button
+                disabled={!canNormalize || isProcessing}
+                isLoading={isBulkProcessing}
+                leftIcon={<Wrench size={16} />}
+                onClick={normalizeAllSounds}
+                variant="ghost"
+              >
                 Normalize all
               </Button>
             )}
-            <Button disabled={isImporting} onClick={importFromPicker} variant="secondary">
+            <Button disabled={isImporting} isLoading={isImporting} leftIcon={<Upload size={16} />} onClick={importFromPicker} variant="secondary">
               {isImporting ? 'Importing...' : 'Import sound'}
             </Button>
           </div>
         </div>
 
-        {toolsStatus && (
-          <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
-            <span className="font-semibold text-neutral-800">Audio tools:</span> {toolsStatus.message}
-          </div>
-        )}
+        {toolsStatus && <AudioToolsPanel toolsStatus={toolsStatus} />}
 
         <div
           className={classNames('drop-zone mt-5', isDropActive && 'drop-zone-active')}
@@ -368,12 +423,14 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
           <p className="mt-1 text-sm text-neutral-500">MP3, WAV, M4A, OGG, and FLAC are accepted.</p>
         </div>
 
+        {progress && <ProgressBar {...progress} />}
         {toast && <Toast toast={toast} onDismiss={() => setToast(null)} />}
       </Card>
 
       {config.sounds.length === 0 ? (
         <Card>
           <EmptyState
+            icon={<FileAudio size={20} />}
             title="No sounds yet"
             body="Use the import button or drag audio files onto the Sounds page to add your first producer tag."
           />
@@ -418,6 +475,8 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
               onStop={stopPreview}
               isMenuOpen={openMenuId === sound.id}
               isProcessing={processingIds.includes(sound.id)}
+              isProbing={probingIds.includes(sound.id)}
+              isSavingRename={isSavingRename && editingId === sound.id}
               canNormalize={Boolean(canNormalize)}
             />
           ))}
@@ -428,6 +487,7 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
         <ConfirmDialog
           body={confirmationBody(confirmState)}
           confirmLabel={confirmState.kind === 'bulk' ? 'Delete selected' : 'Delete sound'}
+          isConfirming={isDeleting}
           onCancel={() => setConfirmState(null)}
           onConfirm={confirmDelete}
           title="Delete from library?"
@@ -445,6 +505,8 @@ type SoundCardProps = {
   isSelected: boolean;
   isMenuOpen: boolean;
   isProcessing: boolean;
+  isProbing: boolean;
+  isSavingRename: boolean;
   canNormalize: boolean;
   onSelectedChange: (checked: boolean) => void;
   onPlay: () => void;
@@ -459,6 +521,64 @@ type SoundCardProps = {
   onMenuToggle: () => void;
 };
 
+function AudioToolsPanel({toolsStatus}: {toolsStatus: AudioToolsStatus}) {
+  return (
+    <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-3">
+      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-neutral-800">
+        <Wrench size={16} />
+        Audio tools
+      </div>
+      <div className="grid gap-2 md:grid-cols-2">
+        <ToolStatusRow
+          available={toolsStatus.ffmpegAvailable}
+          label="ffmpeg"
+          path={toolsStatus.ffmpegPath}
+          purpose="Normalization"
+        />
+        <ToolStatusRow
+          available={toolsStatus.ffprobeAvailable}
+          label="ffprobe"
+          path={toolsStatus.ffprobePath}
+          purpose="Duration probing"
+        />
+      </div>
+      {!toolsStatus.ffmpegAvailable && (
+        <p className="mt-2 text-xs text-neutral-500">
+          One-click dependency installation is intentionally deferred to a later setup phase.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ToolStatusRow({
+  available,
+  label,
+  path,
+  purpose,
+}: {
+  available: boolean;
+  label: string;
+  path: string;
+  purpose: string;
+}) {
+  return (
+    <div className="rounded-lg bg-white px-3 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          {available ? <CheckCircle2 className="text-emerald-700" size={16} /> : <XCircle className="text-rose-700" size={16} />}
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-neutral-800">{label}</div>
+            <div className="text-xs text-neutral-500">{purpose}</div>
+          </div>
+        </div>
+        <Badge tone={available ? 'green' : 'rose'}>{available ? 'Installed' : 'Missing'}</Badge>
+      </div>
+      {available && <p className="mt-2 truncate font-mono text-xs text-neutral-500" title={path}>{path}</p>}
+    </div>
+  );
+}
+
 function SoundCard({
   sound,
   playingId,
@@ -467,6 +587,8 @@ function SoundCard({
   isSelected,
   isMenuOpen,
   isProcessing,
+  isProbing,
+  isSavingRename,
   canNormalize,
   onSelectedChange,
   onPlay,
@@ -505,16 +627,25 @@ function SoundCard({
               <h3 className="truncate text-base font-semibold">{sound.name}</h3>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Badge tone={statusTone(sound.status)}>{sound.status}</Badge>
+              <Badge tone={statusTone(sound.status)}>
+                <span className="flex items-center gap-1.5">{statusIcon(sound.status)}{sound.status}</span>
+              </Badge>
               <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-semibold uppercase text-neutral-600">
                 {sound.format || fileExtension(sound.originalPath)}
               </span>
-              <span className="text-sm text-neutral-500">{formatDuration(sound.durationMs)}</span>
+              <span className="flex items-center gap-1 text-sm text-neutral-500">
+                <Clock3 size={14} />
+                {formatDuration(sound.durationMs)}
+              </span>
               <span className="text-sm text-neutral-500">Imported {formatDate(sound.createdAt)}</span>
             </div>
-            <p className="mt-3 break-all font-mono text-xs leading-5 text-neutral-500">{sound.originalPath}</p>
+            <div className="mt-3 rounded-lg bg-neutral-50 px-3 py-2">
+              <p className="break-all font-mono text-xs leading-5 text-neutral-500">{sound.originalPath}</p>
+            </div>
             {sound.processedPath && (
-              <p className="mt-1 break-all font-mono text-xs leading-5 text-emerald-700">Processed {sound.processedPath}</p>
+              <div className="mt-2 rounded-lg bg-emerald-50 px-3 py-2">
+                <p className="break-all font-mono text-xs leading-5 text-emerald-700">Processed {sound.processedPath}</p>
+              </div>
             )}
             {sound.error && <p className="mt-2 text-sm text-rose-700">{sound.error}</p>}
           </div>
@@ -522,41 +653,47 @@ function SoundCard({
 
         <div className="sound-card-actions">
           {isPlaying ? (
-            <Button className="w-24" onClick={onStop} variant="secondary">
+            <Button className="w-24" leftIcon={<Square size={15} />} onClick={onStop} variant="secondary">
               Stop
             </Button>
           ) : (
-            <Button className="w-24" onClick={onPlay} variant="success">
+            <Button className="w-24" leftIcon={<Play size={15} />} onClick={onPlay} variant="success">
               Preview
             </Button>
           )}
           {isEditing ? (
             <>
-              <Button className="w-20" onClick={onSaveRename}>
+              <Button className="w-24" isLoading={isSavingRename} onClick={onSaveRename}>
                 Save
               </Button>
-              <Button className="w-20" onClick={onCancelRename} variant="ghost">
+              <Button className="w-20" disabled={isSavingRename} onClick={onCancelRename} variant="ghost">
                 Cancel
               </Button>
             </>
           ) : (
             <>
-              <Button className="w-20" disabled={isProcessing} onClick={onDelete} variant="danger">
+              <Button className="w-24" disabled={isProcessing} leftIcon={<Trash2 size={15} />} onClick={onDelete} variant="danger">
                 Delete
               </Button>
               <div className="relative">
-                <Button aria-expanded={isMenuOpen} aria-label={`More actions for ${sound.name}`} className="w-10 px-0" onClick={onMenuToggle} variant="ghost">
-                  ...
-                </Button>
+                <IconButton
+                  aria-expanded={isMenuOpen}
+                  icon={<MoreHorizontal size={17} />}
+                  label={`More actions for ${sound.name}`}
+                  onClick={onMenuToggle}
+                />
                 {isMenuOpen && (
                   <div className="sound-action-menu">
                     <button className="sound-action-menu-item" onClick={onRename} type="button">
+                      <Pencil size={15} />
                       Rename
                     </button>
-                    <button className="sound-action-menu-item" onClick={onProbe} type="button">
-                      Probe duration
+                    <button className="sound-action-menu-item" disabled={isProbing} onClick={onProbe} type="button">
+                      {isProbing ? <RefreshCw className="spinner" size={15} /> : <ScanSearch size={15} />}
+                      {isProbing ? 'Probing...' : 'Probe duration'}
                     </button>
                     <button className="sound-action-menu-item" disabled={!canNormalize || isProcessing} onClick={onProcess} type="button">
+                      {isProcessing ? <RefreshCw className="spinner" size={15} /> : <Wrench size={15} />}
                       {isProcessing ? 'Normalizing...' : 'Normalize'}
                     </button>
                   </div>
@@ -568,6 +705,19 @@ function SoundCard({
       </div>
     </Card>
   );
+}
+
+function statusIcon(status: SoundRecord['status']) {
+  if (status === 'ready') {
+    return <CheckCircle2 size={14} />;
+  }
+  if (status === 'processing') {
+    return <RefreshCw className="spinner" size={14} />;
+  }
+  if (status === 'failed') {
+    return <XCircle size={14} />;
+  }
+  return <Download size={14} />;
 }
 
 function confirmationBody(confirmState: ConfirmState) {

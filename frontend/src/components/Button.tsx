@@ -1,5 +1,6 @@
-import type {ButtonHTMLAttributes} from 'react';
+import type {ButtonHTMLAttributes, ReactNode} from 'react';
 import {classNames} from '../utils/classNames';
+import {Spinner} from './Spinner';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
 
@@ -13,12 +14,32 @@ const variantClass: Record<ButtonVariant, string> = {
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
+  isLoading?: boolean;
 };
 
-export function Button({children, className, variant = 'primary', type = 'button', ...props}: ButtonProps) {
+export function Button({
+  children,
+  className,
+  disabled,
+  isLoading = false,
+  leftIcon,
+  rightIcon,
+  variant = 'primary',
+  type = 'button',
+  ...props
+}: ButtonProps) {
   return (
-    <button type={type} className={classNames('button', variantClass[variant], className)} {...props}>
+    <button
+      type={type}
+      className={classNames('button', variantClass[variant], className)}
+      disabled={disabled || isLoading}
+      {...props}
+    >
+      {isLoading ? <Spinner /> : leftIcon}
       {children}
+      {rightIcon}
     </button>
   );
 }

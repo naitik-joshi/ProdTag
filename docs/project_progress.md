@@ -53,6 +53,15 @@ ProdTag is a Wails v2 desktop app with a Go backend/helper direction and a React
   - Delete now removes processed app-data files as well as original app-data copies when safe.
   - Secondary row actions moved into an ellipsis menu; Preview and Delete remain visible.
   - Validation passed with `go test ./...` and `cd frontend && npm run build`; Codex-side `wails build` again reached frontend compile and failed at app compile without useful detail, so user-local manual Wails build remains the packaging source of truth.
+- Phase 2.6: UI feedback system, icons, and sound page polish.
+  - Added `lucide-react` for subtle stroke icons across navigation, page headers, buttons, status rows, empty states, and sound actions.
+  - Shared UI now includes icon-aware buttons, an accessible icon button, a spinner, and a reusable progress bar.
+  - Multi-file import and Normalize all now show honest step-based progress instead of only toast copy.
+  - Busy actions show loading states and disable repeated clicks while import, rename, probing, normalization, or delete confirmation is in flight.
+  - The Sounds page now shows separate ffmpeg and ffprobe status rows with installed/missing state and truncated tool paths.
+  - Sound cards were tightened into clearer title, status/duration, path, and action areas while preserving the existing warm local-control-center style.
+  - One-click FFmpeg/dependency installation is intentionally deferred to a later setup/integrations phase.
+  - Validation passed with `go test ./...` and `cd frontend && npm run build`; Codex-side `wails build` still stops at the sandbox app-compile step after successful bindings/frontend compile.
 
 ## Current UX Direction
 

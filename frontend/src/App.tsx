@@ -1,4 +1,5 @@
 import {useEffect, useMemo, useState} from 'react';
+import {Gauge, Keyboard, Music2, Plug, Settings, SlidersHorizontal} from 'lucide-react';
 import {LoadConfig, SaveConfig} from '../wailsjs/go/main/App';
 import {main as wailsModels} from '../wailsjs/go/models';
 import {PageHeader} from './components/PageHeader';
@@ -83,6 +84,7 @@ function App() {
         <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col px-8 py-6">
           <PageHeader
             title={pageTitle(activePage)}
+            icon={pageHeaderIcon(activePage)}
             hasUnsavedChanges={hasUnsavedChanges}
             isSaving={loadState === 'saving'}
             canSave={Boolean(draftConfig) && hasUnsavedChanges}
@@ -116,6 +118,24 @@ function ErrorPanel({message}: {message: string}) {
 
 function pageTitle(page: PageKey) {
   return pages.find((item) => item.key === page)?.label ?? 'ProdTag';
+}
+
+function pageHeaderIcon(page: PageKey) {
+  const iconProps = {size: 21, strokeWidth: 2};
+  switch (page) {
+    case 'dashboard':
+      return <Gauge {...iconProps} />;
+    case 'sounds':
+      return <Music2 {...iconProps} />;
+    case 'rules':
+      return <SlidersHorizontal {...iconProps} />;
+    case 'hotkeys':
+      return <Keyboard {...iconProps} />;
+    case 'integrations':
+      return <Plug {...iconProps} />;
+    case 'settings':
+      return <Settings {...iconProps} />;
+  }
 }
 
 export default App;

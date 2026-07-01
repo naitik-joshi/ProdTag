@@ -1,3 +1,4 @@
+import {Gauge, Keyboard, Music2, Plug, Settings, SlidersHorizontal} from 'lucide-react';
 import {PageKey, PageNavItem} from '../types/app';
 import {classNames} from '../utils/classNames';
 import {StatusMessage} from './StatusMessage';
@@ -27,7 +28,10 @@ export function Sidebar({activePage, pages, statusMessage, onNavigate}: SidebarP
               className={classNames('sidebar-link', isActive ? 'sidebar-link-active' : 'sidebar-link-idle')}
               onClick={() => onNavigate(page.key)}
             >
-              <span className="text-sm font-semibold">{page.label}</span>
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                {navIcon(page.key)}
+                {page.label}
+              </span>
               <span className="text-xs text-neutral-500">{page.hint}</span>
             </button>
           );
@@ -37,4 +41,22 @@ export function Sidebar({activePage, pages, statusMessage, onNavigate}: SidebarP
       <StatusMessage message={statusMessage} />
     </aside>
   );
+}
+
+function navIcon(page: PageKey) {
+  const iconProps = {size: 16, strokeWidth: 2};
+  switch (page) {
+    case 'dashboard':
+      return <Gauge {...iconProps} />;
+    case 'sounds':
+      return <Music2 {...iconProps} />;
+    case 'rules':
+      return <SlidersHorizontal {...iconProps} />;
+    case 'hotkeys':
+      return <Keyboard {...iconProps} />;
+    case 'integrations':
+      return <Plug {...iconProps} />;
+    case 'settings':
+      return <Settings {...iconProps} />;
+  }
 }
