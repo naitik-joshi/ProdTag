@@ -214,6 +214,28 @@ export namespace main {
 	        this.logsDir = source["logsDir"];
 	    }
 	}
+	export class AudioToolsStatus {
+	    ffmpegAvailable: boolean;
+	    ffprobeAvailable: boolean;
+	    ffmpegPath: string;
+	    ffprobePath: string;
+	    message: string;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AudioToolsStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ffmpegAvailable = source["ffmpegAvailable"];
+	        this.ffprobeAvailable = source["ffprobeAvailable"];
+	        this.ffmpegPath = source["ffmpegPath"];
+	        this.ffprobePath = source["ffprobePath"];
+	        this.message = source["message"];
+	        this.error = source["error"];
+	    }
+	}
 	export class ConfigSnapshot {
 	    config: AppConfig;
 	    paths: AppDataPaths;

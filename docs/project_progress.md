@@ -42,6 +42,17 @@ ProdTag is a Wails v2 desktop app with a Go backend/helper direction and a React
   - Sound cards now support checkbox selection and a clean "Delete selected" action.
   - A lightweight reusable toast/status component shows import, rename, and delete success/failure.
   - Sound action buttons now have clearer Preview, Stop, Rename, and subtle danger Delete hierarchy.
+- Phase 2.5: Sound processing, duration probing, normalization, and polish.
+  - Drop import progress now advances through per-file import messages and clears non-error status messages automatically.
+  - Preview/Stop controls now keep a stable width so imported metadata rows do not jump when playback state changes.
+  - The backend detects `ffmpeg` and `ffprobe` availability without blocking import, preview, rename, or delete when tools are missing.
+  - Imported sounds are opportunistically probed for duration with `ffprobe`; existing sounds can be probed from the row action menu.
+  - Sounds can be normalized manually per row or with Normalize all when FFmpeg is available.
+  - Normalized files are written as internal WAV files under the processed sounds app-data folder while originals are preserved.
+  - Preview prefers the processed WAV when present and falls back to the original copy.
+  - Delete now removes processed app-data files as well as original app-data copies when safe.
+  - Secondary row actions moved into an ellipsis menu; Preview and Delete remain visible.
+  - Validation passed with `go test ./...` and `cd frontend && npm run build`; Codex-side `wails build` again reached frontend compile and failed at app compile without useful detail, so user-local manual Wails build remains the packaging source of truth.
 
 ## Current UX Direction
 
@@ -59,7 +70,8 @@ ProdTag is a Wails v2 desktop app with a Go backend/helper direction and a React
 
 ## Next Up
 
-- Phase 2.5: Normalization and richer metadata.
-- Add FFmpeg probing/normalization, duration extraction, processed WAV creation, and stronger import progress.
+- Phase 2 wrap-up or Phase 3 planning.
+- Playlist/group assignment is still open from Phase 2 if it is needed before moving into helper playback.
+- Phase 3 will start the helper/playback architecture; rules, shell integrations, and hotkeys remain intentionally untouched.
 - Packaging note: the earlier Codex-side macOS `UTType` linker/package warning is considered resolved for now because the user manually ran `wails build` successfully and produced `build/bin/ProdTag.app`.
 - Codex-side `wails build` may still fail at the final macOS app compile step in this sandbox even after frontend and Go tests pass; prefer user-local manual build as the packaging truth for now.

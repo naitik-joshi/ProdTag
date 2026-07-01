@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -189,6 +190,52 @@ func TestImportSoundPathsRejectsUnsupportedFile(t *testing.T) {
 
 	if _, err := importSoundPaths([]string{sourcePath}); err == nil {
 		t.Fatal("expected unsupported file error")
+	}
+}
+
+func TestCheckAudioToolsDoesNotError(t *testing.T) {
+	app := NewApp()
+	if _, err := app.CheckAudioTools(); err != nil {
+		t.Fatalf("CheckAudioTools() error = %v", err)
+	}
+}
+
+func TestProcessSoundWithoutFFmpegMarksFailed(t *testing.T) {
+	isolateUserDirs(t)
+
+	sourcePath := filepath.Join(t.TempDir(), "tag.wav")
+	if err := os.WriteFile(sourcePath, []byte("fake audio"), 0o644); err != nil {
+		t.Fatalf("write source sound: %v", err)
+	}
+
+	snapshot, err := importSoundPaths([]string{sourcePath})
+	if err != nil {
+		t.Fatalf("importSoundPaths() error = %v", err)
+	}
+
+	originalLookPath := lookPath
+	lookPath = func(name string) (string, error) {
+		return "", errors.New("not found")
+	}
+	t.Cleanup(func() {
+		lookPath = originalLookPath
+	})
+
+	app := NewApp()
+	processed, err := app.ProcessSound(snapshot.Config.Sounds[0].ID)
+	if err != nil {
+		t.Fatalf("ProcessSound() error = %v", err)
+	}
+
+	sound := processed.Config.Sounds[0]
+	if sound.Status != "failed" {
+		t.Fatalf("expected failed status, got %q", sound.Status)
+	}
+	if sound.Error == nil || !strings.Contains(*sound.Error, "ffmpeg") {
+		t.Fatalf("expected ffmpeg error, got %v", sound.Error)
+	}
+	if sound.ProcessedPath != nil {
+		t.Fatalf("expected no processed path, got %q", *sound.ProcessedPath)
 	}
 }
 

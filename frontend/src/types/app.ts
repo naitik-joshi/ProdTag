@@ -12,6 +12,15 @@ export type SoundRecord = {
   error?: string | null;
 };
 
+export type AudioToolsStatus = {
+  ffmpegAvailable: boolean;
+  ffprobeAvailable: boolean;
+  ffmpegPath: string;
+  ffprobePath: string;
+  message: string;
+  error?: string | null;
+};
+
 export type PlaylistRecord = {
   id: string;
   name: string;

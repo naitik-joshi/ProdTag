@@ -1,9 +1,13 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {
+  CheckAudioTools,
   DeleteSound,
   DeleteSounds,
   GetSoundPreviewDataURL,
   ImportSoundPaths,
+  ProbeSoundDuration,
+  ProcessSound,
+  ProcessSounds,
   RenameSound,
   SelectSoundFiles,
 } from '../../wailsjs/go/main/App';
@@ -14,7 +18,7 @@ import {Card} from '../components/Card';
 import {ConfirmDialog} from '../components/ConfirmDialog';
 import {EmptyState} from '../components/EmptyState';
 import {Toast, ToastState} from '../components/Toast';
-import {AppConfig, ConfigSnapshot, SoundRecord} from '../types/app';
+import {AppConfig, AudioToolsStatus, ConfigSnapshot, SoundRecord} from '../types/app';
 import {classNames} from '../utils/classNames';
 
 type SoundsPageProps = {
@@ -36,6 +40,9 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
+  const [toolsStatus, setToolsStatus] = useState<AudioToolsStatus | null>(null);
+  const [processingIds, setProcessingIds] = useState<string[]>([]);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const dragDepth = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -45,11 +52,24 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
   }, [config.sounds.length, selectedIds.length]);
 
   useEffect(() => {
+    void refreshAudioTools();
+  }, []);
+
+  useEffect(() => {
+    if (!toast || toast.tone === 'rose') {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setToast(null), 2600);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
+
+  useEffect(() => {
     OnFileDrop((_x, _y, paths) => {
       dragDepth.current = 0;
       setIsDropActive(false);
       if (paths.length > 0) {
-        void importPaths(paths);
+        void importPaths(paths, 'drop');
       }
     }, true);
 
@@ -63,6 +83,22 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
     setSelectedIds((current) => current.filter((id) => soundIds.has(id)));
   }, [config.sounds]);
 
+  async function refreshAudioTools() {
+    try {
+      const status = await CheckAudioTools();
+      setToolsStatus(status as AudioToolsStatus);
+    } catch (error) {
+      setToolsStatus({
+        ffmpegAvailable: false,
+        ffprobeAvailable: false,
+        ffmpegPath: '',
+        ffprobePath: '',
+        message: failureMessage(error),
+        error: failureMessage(error),
+      });
+    }
+  }
+
   async function importFromPicker() {
     setIsImporting(true);
     setToast({message: 'Selecting file...', tone: 'neutral'});
@@ -72,7 +108,7 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
         setToast(null);
         return;
       }
-      await importPaths(paths);
+      await importPaths(paths, 'picker');
     } catch (error) {
       setToast({message: failureMessage(error), tone: 'rose'});
     } finally {
@@ -80,14 +116,19 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
     }
   }
 
-  async function importPaths(paths: string[]) {
+  async function importPaths(paths: string[], source: 'drop' | 'picker') {
     setIsImporting(true);
-    setToast({message: 'Copying to library...', tone: 'amber'});
+    setToast({message: source === 'drop' ? 'Drop received' : 'Preparing import...', tone: 'neutral'});
     try {
-      const snapshot = await ImportSoundPaths(paths);
-      setToast({message: 'Reading metadata...', tone: 'amber'});
-      onConfigUpdated(snapshot as ConfigSnapshot);
-      setToast({message: `${paths.length} sound${paths.length === 1 ? '' : 's'} added to library`, tone: 'green'});
+      let latestSnapshot: ConfigSnapshot | null = null;
+      for (let index = 0; index < paths.length; index += 1) {
+        setToast({message: `Importing ${index + 1}/${paths.length}...`, tone: 'amber'});
+        latestSnapshot = (await ImportSoundPaths([paths[index]])) as ConfigSnapshot;
+        onConfigUpdated(latestSnapshot);
+      }
+      if (latestSnapshot) {
+        setToast({message: `Imported ${paths.length} sound${paths.length === 1 ? '' : 's'}`, tone: 'green'});
+      }
     } catch (error) {
       setToast({message: failureMessage(error), tone: 'rose'});
     } finally {
@@ -119,10 +160,11 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
     event.preventDefault();
     dragDepth.current = 0;
     setIsDropActive(false);
-    setToast({message: 'Drop received. Preparing import...', tone: 'neutral'});
+    setToast({message: 'Drop received', tone: 'neutral'});
   }
 
   function startRename(sound: SoundRecord) {
+    setOpenMenuId(null);
     setEditingId(sound.id);
     setEditingName(sound.name);
   }
@@ -185,6 +227,67 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
     }
   }
 
+  async function probeDuration(sound: SoundRecord) {
+    setOpenMenuId(null);
+    setToast({message: 'Reading duration...', tone: 'amber'});
+    try {
+      const snapshot = await ProbeSoundDuration(sound.id);
+      onConfigUpdated(snapshot as ConfigSnapshot);
+      const updated = (snapshot as ConfigSnapshot).config.sounds.find((item) => item.id === sound.id);
+      if (updated?.error) {
+        setToast({message: updated.error || 'Duration could not be read', tone: 'rose'});
+        return;
+      }
+      setToast({message: 'Duration updated', tone: 'green'});
+    } catch (error) {
+      setToast({message: failureMessage(error), tone: 'rose'});
+    }
+  }
+
+  async function normalizeSound(sound: SoundRecord) {
+    setOpenMenuId(null);
+    setProcessingIds((current) => (current.includes(sound.id) ? current : [...current, sound.id]));
+    setToast({message: `Normalizing ${sound.name}...`, tone: 'amber'});
+    try {
+      const snapshot = await ProcessSound(sound.id);
+      onConfigUpdated(snapshot as ConfigSnapshot);
+      const updated = (snapshot as ConfigSnapshot).config.sounds.find((item) => item.id === sound.id);
+      if (updated?.status === 'failed') {
+        setToast({message: updated.error || 'Normalization failed', tone: 'rose'});
+        return;
+      }
+      setToast({message: 'Sound normalized', tone: 'green'});
+    } catch (error) {
+      setToast({message: failureMessage(error), tone: 'rose'});
+    } finally {
+      setProcessingIds((current) => current.filter((id) => id !== sound.id));
+    }
+  }
+
+  async function normalizeAllSounds() {
+    const ids = config.sounds.map((sound) => sound.id);
+    if (ids.length === 0) {
+      return;
+    }
+
+    setProcessingIds(ids);
+    setToast({message: `Normalizing ${ids.length} sound${ids.length === 1 ? '' : 's'}...`, tone: 'amber'});
+    try {
+      const snapshot = await ProcessSounds(ids);
+      onConfigUpdated(snapshot as ConfigSnapshot);
+      const failedCount = (snapshot as ConfigSnapshot).config.sounds.filter((sound) => ids.includes(sound.id) && sound.status === 'failed').length;
+      if (failedCount > 0) {
+        setToast({message: `${failedCount} sound${failedCount === 1 ? '' : 's'} could not be normalized`, tone: 'rose'});
+        return;
+      }
+      setToast({message: `Normalized ${ids.length} sound${ids.length === 1 ? '' : 's'}`, tone: 'green'});
+    } catch (error) {
+      setToast({message: failureMessage(error), tone: 'rose'});
+    } finally {
+      setProcessingIds([]);
+    }
+  }
+
   async function playPreview(sound: SoundRecord) {
     try {
       stopPreview();
@@ -222,6 +325,8 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
     setSelectedIds(checked ? config.sounds.map((sound) => sound.id) : []);
   }
 
+  const canNormalize = toolsStatus?.ffmpegAvailable;
+
   return (
     <div className="space-y-5">
       <Card>
@@ -232,10 +337,23 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
               Import short producer tags and keep local copies inside ProdTag.
             </p>
           </div>
-          <Button disabled={isImporting} onClick={importFromPicker} variant="secondary">
-            {isImporting ? 'Importing...' : 'Import sound'}
-          </Button>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {config.sounds.length > 0 && (
+              <Button disabled={!canNormalize || processingIds.length > 0} onClick={normalizeAllSounds} variant="ghost">
+                Normalize all
+              </Button>
+            )}
+            <Button disabled={isImporting} onClick={importFromPicker} variant="secondary">
+              {isImporting ? 'Importing...' : 'Import sound'}
+            </Button>
+          </div>
         </div>
+
+        {toolsStatus && (
+          <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
+            <span className="font-semibold text-neutral-800">Audio tools:</span> {toolsStatus.message}
+          </div>
+        )}
 
         <div
           className={classNames('drop-zone mt-5', isDropActive && 'drop-zone-active')}
@@ -250,7 +368,7 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
           <p className="mt-1 text-sm text-neutral-500">MP3, WAV, M4A, OGG, and FLAC are accepted.</p>
         </div>
 
-        {toast && <Toast toast={toast} />}
+        {toast && <Toast toast={toast} onDismiss={() => setToast(null)} />}
       </Card>
 
       {config.sounds.length === 0 ? (
@@ -290,11 +408,17 @@ export function SoundsPage({config, onConfigUpdated}: SoundsPageProps) {
               onCancelRename={() => setEditingId(null)}
               onDelete={() => requestDelete(sound)}
               onEditNameChange={setEditingName}
+              onMenuToggle={() => setOpenMenuId((current) => (current === sound.id ? null : sound.id))}
               onPlay={() => playPreview(sound)}
+              onProbe={() => probeDuration(sound)}
+              onProcess={() => normalizeSound(sound)}
               onRename={() => startRename(sound)}
               onSaveRename={() => saveRename(sound)}
               onSelectedChange={(checked) => toggleSelected(sound.id, checked)}
               onStop={stopPreview}
+              isMenuOpen={openMenuId === sound.id}
+              isProcessing={processingIds.includes(sound.id)}
+              canNormalize={Boolean(canNormalize)}
             />
           ))}
         </section>
@@ -319,14 +443,20 @@ type SoundCardProps = {
   editingId: string | null;
   editingName: string;
   isSelected: boolean;
+  isMenuOpen: boolean;
+  isProcessing: boolean;
+  canNormalize: boolean;
   onSelectedChange: (checked: boolean) => void;
   onPlay: () => void;
   onStop: () => void;
   onRename: () => void;
+  onProbe: () => void;
+  onProcess: () => void;
   onSaveRename: () => void;
   onCancelRename: () => void;
   onEditNameChange: (value: string) => void;
   onDelete: () => void;
+  onMenuToggle: () => void;
 };
 
 function SoundCard({
@@ -335,14 +465,20 @@ function SoundCard({
   editingId,
   editingName,
   isSelected,
+  isMenuOpen,
+  isProcessing,
+  canNormalize,
   onSelectedChange,
   onPlay,
   onStop,
   onRename,
+  onProbe,
+  onProcess,
   onSaveRename,
   onCancelRename,
   onEditNameChange,
   onDelete,
+  onMenuToggle,
 }: SoundCardProps) {
   const isEditing = editingId === sound.id;
   const isPlaying = playingId === sound.id;
@@ -373,38 +509,61 @@ function SoundCard({
               <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-semibold uppercase text-neutral-600">
                 {sound.format || fileExtension(sound.originalPath)}
               </span>
+              <span className="text-sm text-neutral-500">{formatDuration(sound.durationMs)}</span>
               <span className="text-sm text-neutral-500">Imported {formatDate(sound.createdAt)}</span>
             </div>
             <p className="mt-3 break-all font-mono text-xs leading-5 text-neutral-500">{sound.originalPath}</p>
+            {sound.processedPath && (
+              <p className="mt-1 break-all font-mono text-xs leading-5 text-emerald-700">Processed {sound.processedPath}</p>
+            )}
             {sound.error && <p className="mt-2 text-sm text-rose-700">{sound.error}</p>}
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="sound-card-actions">
           {isPlaying ? (
-            <Button onClick={onStop} variant="secondary">
+            <Button className="w-24" onClick={onStop} variant="secondary">
               Stop
             </Button>
           ) : (
-            <Button onClick={onPlay} variant="success">
+            <Button className="w-24" onClick={onPlay} variant="success">
               Preview
             </Button>
           )}
           {isEditing ? (
             <>
-              <Button onClick={onSaveRename}>Save</Button>
-              <Button onClick={onCancelRename} variant="ghost">
+              <Button className="w-20" onClick={onSaveRename}>
+                Save
+              </Button>
+              <Button className="w-20" onClick={onCancelRename} variant="ghost">
                 Cancel
               </Button>
             </>
           ) : (
-            <Button onClick={onRename} variant="ghost">
-              Rename
-            </Button>
+            <>
+              <Button className="w-20" disabled={isProcessing} onClick={onDelete} variant="danger">
+                Delete
+              </Button>
+              <div className="relative">
+                <Button aria-expanded={isMenuOpen} aria-label={`More actions for ${sound.name}`} className="w-10 px-0" onClick={onMenuToggle} variant="ghost">
+                  ...
+                </Button>
+                {isMenuOpen && (
+                  <div className="sound-action-menu">
+                    <button className="sound-action-menu-item" onClick={onRename} type="button">
+                      Rename
+                    </button>
+                    <button className="sound-action-menu-item" onClick={onProbe} type="button">
+                      Probe duration
+                    </button>
+                    <button className="sound-action-menu-item" disabled={!canNormalize || isProcessing} onClick={onProcess} type="button">
+                      {isProcessing ? 'Normalizing...' : 'Normalize'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           )}
-          <Button onClick={onDelete} variant="danger">
-            Delete
-          </Button>
         </div>
       </div>
     </Card>
@@ -450,6 +609,21 @@ function formatDate(value: string) {
   }
 
   return date.toLocaleString();
+}
+
+function formatDuration(value?: number | null) {
+  if (!value || value <= 0) {
+    return 'Duration unknown';
+  }
+
+  const totalSeconds = Math.round(value / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes === 0) {
+    return `${seconds}s`;
+  }
+
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
 function failureMessage(error: unknown) {

@@ -33,7 +33,7 @@ Notes:
 
 ## Phase 2 — Sound Library
 
-Status: MVP complete with Phase 2.1 QA fixes; normalization/playlists remain for follow-up.
+Status: Phase 2.5 complete except playlists/groups.
 
 Goal: Let users import, preview, and manage sounds.
 
@@ -41,7 +41,7 @@ Tasks:
 
 - [x] Add drag-and-drop sound import.
 - [x] Store original files in app data.
-- [ ] Use FFmpeg to normalize and convert imported audio to internal WAV.
+- [x] Use FFmpeg to normalize and convert imported audio to internal WAV.
 - [x] Show import progress steps in the UI.
 - [x] Add sound list with name, duration, format, and preview button.
 - [x] Add delete/rename sound.
@@ -57,6 +57,9 @@ Notes:
 - Preview currently uses UI-side audio from a backend data URL, not the future background helper.
 - Playlist/group assignment remains open.
 - Phase 2.1 enabled Wails file drop, added active drop feedback, custom delete confirmation, single/bulk delete, and toast/status feedback.
+- Phase 2.5 added FFmpeg/ffprobe detection, duration probing, manual per-sound normalization, Normalize all, processed WAV output, processed-file preview preference, and processed-file cleanup on delete.
+- Phase 2.5 kept normalization manual so missing FFmpeg does not block import, preview, rename, or delete.
+- Phase 2.5 moved secondary row actions behind an ellipsis menu to keep sound cards calm as actions grow.
 
 ## Phase 3 — Helper + Playback
 
