@@ -6,6 +6,14 @@ export function CheckAudioTools() {
   return window['go']['main']['App']['CheckAudioTools']();
 }
 
+export function CreateRule(arg1) {
+  return window['go']['main']['App']['CreateRule'](arg1);
+}
+
+export function DeleteRule(arg1) {
+  return window['go']['main']['App']['DeleteRule'](arg1);
+}
+
 export function DeleteSound(arg1) {
   return window['go']['main']['App']['DeleteSound'](arg1);
 }
@@ -24,6 +32,10 @@ export function ImportSoundPaths(arg1) {
 
 export function ImportSoundWithPicker() {
   return window['go']['main']['App']['ImportSoundWithPicker']();
+}
+
+export function ListRules() {
+  return window['go']['main']['App']['ListRules']();
 }
 
 export function LoadConfig() {
@@ -52,4 +64,16 @@ export function SaveConfig(arg1) {
 
 export function SelectSoundFiles() {
   return window['go']['main']['App']['SelectSoundFiles']();
+}
+
+export function TestRuleSound(arg1) {
+  return window['go']['main']['App']['TestRuleSound'](arg1);
+}
+
+export function ToggleRule(arg1, arg2) {
+  return window['go']['main']['App']['ToggleRule'](arg1, arg2);
+}
+
+export function UpdateRule(arg1) {
+  return window['go']['main']['App']['UpdateRule'](arg1);
 }

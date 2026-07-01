@@ -95,7 +95,7 @@ function App() {
           {loadState === 'error' && <ErrorPanel message={message} />}
           {config && activePage === 'dashboard' && <DashboardPage config={config} paths={paths} />}
           {config && activePage === 'sounds' && <SoundsPage config={config} onConfigUpdated={handleConfigUpdated} />}
-          {config && activePage === 'rules' && <RulesPage config={config} />}
+          {config && activePage === 'rules' && <RulesPage config={config} onConfigUpdated={handleConfigUpdated} />}
           {config && activePage === 'hotkeys' && <HotkeysPage config={config} />}
           {config && activePage === 'integrations' && <IntegrationsPage config={config} />}
           {config && activePage === 'settings' && (

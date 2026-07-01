@@ -63,9 +63,33 @@ Notes:
 - Phase 2.6 added Lucide icons, icon-aware buttons, accessible icon buttons, reusable spinner/progress components, clearer audio-tool status rows, and more stable sound-card action states.
 - Phase 2.6 intentionally deferred one-click FFmpeg/dependency installation to a later setup/integrations phase.
 
-## Phase 3 — Helper + Playback
+## Phase 3 — Rules MVP
 
-Goal: Make sounds play without the UI needing to stay open.
+Status: Complete.
+
+Goal: Let users attach sounds to command outcomes.
+
+Tasks:
+
+- [x] Create rules model with name, enabled state, event type, sound assignment, optional command matching fields, and timestamps.
+- [x] Add MVP event types for command, Git, test, and build success/failure outcomes.
+- [x] Add rule create, edit, enable/disable, delete, and test-sound UI.
+- [x] Show missing sound state when a referenced sound is deleted.
+- [x] Add backend rule CRUD methods and config persistence tests.
+- [ ] Generate lightweight matcher cache for shell integrations.
+
+Done when:
+
+- [x] User can create a rule like `npm test` success/fail and test the assigned sound in the UI.
+
+Notes:
+
+- Rules are definitions only in Phase 3; real terminal detection, helper playback, shell hooks, and daemon behavior are intentionally deferred.
+- Playlist/group assignment remains open from Phase 2, so Phase 3 rules assign a single sound.
+
+## Phase 4 — Helper + Shell Integration
+
+Goal: Make rules react to real terminal commands without requiring the UI to stay open.
 
 Tasks:
 
@@ -75,43 +99,31 @@ Tasks:
 - [ ] Add listening/muted state handling.
 - [ ] Add stop-current-audio action.
 - [ ] Add helper status display in Dashboard.
-
-Done when:
-
-- [ ] Helper can play a sound from a command/event while the UI is closed.
-
-## Phase 4 — Rules and Command Matching
-
-Goal: Let users attach sounds to command outcomes.
-
-Tasks:
-
-- [ ] Create rules model: pattern, match type, condition, playlist, enabled.
-- [ ] Add built-in presets for Git, tests, and builds.
-- [ ] Add custom command rule creation.
-- [ ] Generate lightweight matcher cache for shell integrations.
-- [ ] Add rule test button in UI.
-
-Done when:
-
-- [ ] User can create a rule like `npm test` success/fail and trigger the correct sound.
-
-## Phase 5 — Shell Integrations
-
-Goal: Make ProdTag react to real terminal commands.
-
-Tasks:
-
 - [ ] Add zsh integration first.
 - [ ] Add bash integration.
 - [ ] Add PowerShell integration.
+- [ ] Generate lightweight matcher cache for shell integrations.
 - [ ] Add install/uninstall buttons in Integrations page.
-- [ ] Support current-shell install and global install.
 - [ ] Add doctor checks for installed shell integrations.
 
 Done when:
 
-- [ ] Running a matching command in zsh, bash, or PowerShell can trigger success/fail sounds.
+- [ ] Running a matching command in zsh, bash, or PowerShell can trigger the assigned rule sound through the helper.
+
+## Phase 5 — Rule Presets and Matching Polish
+
+Goal: Make command matching easier and safer after the helper path works.
+
+Tasks:
+
+- [ ] Add built-in presets for common Git, test, and build commands.
+- [ ] Add custom command rule templates.
+- [ ] Add rule test/matcher simulation with command and exit code input.
+- [ ] Support current-shell install and global install if still needed.
+
+Done when:
+
+- [ ] User can quickly create and verify common command rules without understanding matcher internals.
 
 ## Phase 6 — Hotkeys and Startup
 

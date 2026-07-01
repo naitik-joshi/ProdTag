@@ -239,6 +239,145 @@ func TestProcessSoundWithoutFFmpegMarksFailed(t *testing.T) {
 	}
 }
 
+func TestCreateUpdateDeleteRulePersistsConfig(t *testing.T) {
+	isolateUserDirs(t)
+	app := NewApp()
+	sound := importTestSound(t, "success.wav")
+
+	created, err := app.CreateRule(RuleRequest{
+		Name:      "Tests passed",
+		Enabled:   true,
+		EventType: "test_success",
+		SoundID:   sound.ID,
+		MatchMode: "contains",
+	})
+	if err != nil {
+		t.Fatalf("CreateRule() error = %v", err)
+	}
+	if len(created.Config.Rules) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(created.Config.Rules))
+	}
+
+	rule := created.Config.Rules[0]
+	if rule.ID == "" {
+		t.Fatal("expected rule id")
+	}
+	if rule.CreatedAt == "" || rule.UpdatedAt == "" {
+		t.Fatal("expected rule timestamps")
+	}
+	if rule.SoundID != sound.ID {
+		t.Fatalf("expected rule sound id %q, got %q", sound.ID, rule.SoundID)
+	}
+
+	updated, err := app.UpdateRule(RuleRequest{
+		ID:             rule.ID,
+		Name:           "Build failed",
+		Enabled:        false,
+		EventType:      "build_failure",
+		SoundID:        sound.ID,
+		MatchMode:      "startsWith",
+		CommandPattern: "npm run build",
+	})
+	if err != nil {
+		t.Fatalf("UpdateRule() error = %v", err)
+	}
+	if updated.Config.Rules[0].Name != "Build failed" {
+		t.Fatalf("expected updated name, got %q", updated.Config.Rules[0].Name)
+	}
+	if updated.Config.Rules[0].Enabled {
+		t.Fatal("expected updated rule to be disabled")
+	}
+
+	toggled, err := app.ToggleRule(rule.ID, true)
+	if err != nil {
+		t.Fatalf("ToggleRule() error = %v", err)
+	}
+	if !toggled.Config.Rules[0].Enabled {
+		t.Fatal("expected toggled rule to be enabled")
+	}
+
+	reloaded, err := LoadConfigSnapshot()
+	if err != nil {
+		t.Fatalf("LoadConfigSnapshot() error = %v", err)
+	}
+	if len(reloaded.Config.Rules) != 1 {
+		t.Fatalf("expected persisted rule, got %d", len(reloaded.Config.Rules))
+	}
+
+	deleted, err := app.DeleteRule(rule.ID)
+	if err != nil {
+		t.Fatalf("DeleteRule() error = %v", err)
+	}
+	if len(deleted.Config.Rules) != 0 {
+		t.Fatalf("expected no rules after delete, got %d", len(deleted.Config.Rules))
+	}
+}
+
+func TestCreateRuleValidation(t *testing.T) {
+	isolateUserDirs(t)
+	app := NewApp()
+	sound := importTestSound(t, "success.wav")
+
+	if _, err := app.CreateRule(RuleRequest{Name: "", EventType: "test_success", SoundID: sound.ID}); err == nil {
+		t.Fatal("expected empty name validation error")
+	}
+	if _, err := app.CreateRule(RuleRequest{Name: "Bad event", EventType: "unknown", SoundID: sound.ID}); err == nil {
+		t.Fatal("expected event type validation error")
+	}
+	if _, err := app.CreateRule(RuleRequest{Name: "Missing sound", EventType: "test_success", SoundID: "missing"}); err == nil {
+		t.Fatal("expected missing sound validation error")
+	}
+}
+
+func TestRuleSurvivesDeletedSoundReference(t *testing.T) {
+	isolateUserDirs(t)
+	app := NewApp()
+	sound := importTestSound(t, "success.wav")
+
+	created, err := app.CreateRule(RuleRequest{
+		Name:      "Git push",
+		Enabled:   true,
+		EventType: "git_push_success",
+		SoundID:   sound.ID,
+	})
+	if err != nil {
+		t.Fatalf("CreateRule() error = %v", err)
+	}
+
+	if _, err := app.DeleteSound(sound.ID); err != nil {
+		t.Fatalf("DeleteSound() error = %v", err)
+	}
+
+	reloaded, err := LoadConfigSnapshot()
+	if err != nil {
+		t.Fatalf("LoadConfigSnapshot() error = %v", err)
+	}
+	if len(reloaded.Config.Rules) != 1 {
+		t.Fatalf("expected rule to remain after sound delete, got %d", len(reloaded.Config.Rules))
+	}
+	if reloaded.Config.Rules[0].ID != created.Config.Rules[0].ID {
+		t.Fatalf("expected same rule id, got %q", reloaded.Config.Rules[0].ID)
+	}
+	if _, err := app.TestRuleSound(created.Config.Rules[0].ID); err == nil {
+		t.Fatal("expected TestRuleSound to report missing sound")
+	}
+}
+
+func importTestSound(t *testing.T, name string) SoundRecord {
+	t.Helper()
+
+	sourcePath := filepath.Join(t.TempDir(), name)
+	if err := os.WriteFile(sourcePath, []byte("fake audio"), 0o644); err != nil {
+		t.Fatalf("write source sound: %v", err)
+	}
+
+	snapshot, err := importSoundPaths([]string{sourcePath})
+	if err != nil {
+		t.Fatalf("importSoundPaths() error = %v", err)
+	}
+	return snapshot.Config.Sounds[len(snapshot.Config.Sounds)-1]
+}
+
 func isolateUserDirs(t *testing.T) {
 	t.Helper()
 

@@ -62,6 +62,13 @@ ProdTag is a Wails v2 desktop app with a Go backend/helper direction and a React
   - Sound cards were tightened into clearer title, status/duration, path, and action areas while preserving the existing warm local-control-center style.
   - One-click FFmpeg/dependency installation is intentionally deferred to a later setup/integrations phase.
   - Validation passed with `go test ./...` and `cd frontend && npm run build`; Codex-side `wails build` still stops at the sandbox app-compile step after successful bindings/frontend compile.
+- Phase 3: Rules MVP.
+  - Rule records now store id, name, enabled state, event type, sound id, optional match mode, optional command pattern, optional exit code, and created/updated timestamps.
+  - Supported MVP event types cover command success/failure, Git commit/push success, test success/failure, and build success/failure.
+  - Backend rule methods now support listing through config, create, update, delete, enable/disable, and test playback for a rule sound.
+  - The Rules page now supports create, edit, enable/disable, delete confirmation, selected sound metadata, missing sound references, and test playback.
+  - Dashboard now shows total rules and enabled rules.
+  - Rules are definitions only in this phase; terminal capture, helper playback, shell hooks, background daemon behavior, real hotkeys, and one-click dependency installs remain deferred.
 
 ## Current UX Direction
 
@@ -79,8 +86,8 @@ ProdTag is a Wails v2 desktop app with a Go backend/helper direction and a React
 
 ## Next Up
 
-- Phase 2 wrap-up or Phase 3 planning.
+- Phase 4 helper and shell integration planning.
 - Playlist/group assignment is still open from Phase 2 if it is needed before moving into helper playback.
-- Phase 3 will start the helper/playback architecture; rules, shell integrations, and hotkeys remain intentionally untouched.
+- The next technical boundary is making saved rules react to real terminal events through the helper and shell integrations.
 - Packaging note: the earlier Codex-side macOS `UTType` linker/package warning is considered resolved for now because the user manually ran `wails build` successfully and produced `build/bin/ProdTag.app`.
 - Codex-side `wails build` may still fail at the final macOS app compile step in this sandbox even after frontend and Go tests pass; prefer user-local manual build as the packaging truth for now.

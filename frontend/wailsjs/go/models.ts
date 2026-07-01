@@ -72,10 +72,13 @@ export namespace main {
 	    id: string;
 	    name: string;
 	    enabled: boolean;
-	    pattern: string;
-	    matchType: string;
-	    condition: string;
-	    soundId?: string;
+	    eventType: string;
+	    soundId: string;
+	    matchMode?: string;
+	    commandPattern?: string;
+	    exitCode?: number;
+	    createdAt: string;
+	    updatedAt: string;
 	    playlistId?: string;
 	    cooldownMs?: number;
 	    probability?: number;
@@ -89,10 +92,13 @@ export namespace main {
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.enabled = source["enabled"];
-	        this.pattern = source["pattern"];
-	        this.matchType = source["matchType"];
-	        this.condition = source["condition"];
+	        this.eventType = source["eventType"];
 	        this.soundId = source["soundId"];
+	        this.matchMode = source["matchMode"];
+	        this.commandPattern = source["commandPattern"];
+	        this.exitCode = source["exitCode"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
 	        this.playlistId = source["playlistId"];
 	        this.cooldownMs = source["cooldownMs"];
 	        this.probability = source["probability"];
@@ -286,6 +292,32 @@ export namespace main {
 	    }
 	}
 	
+	export class RuleRequest {
+	    id: string;
+	    name: string;
+	    enabled: boolean;
+	    eventType: string;
+	    soundId: string;
+	    matchMode: string;
+	    commandPattern: string;
+	    exitCode?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RuleRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.enabled = source["enabled"];
+	        this.eventType = source["eventType"];
+	        this.soundId = source["soundId"];
+	        this.matchMode = source["matchMode"];
+	        this.commandPattern = source["commandPattern"];
+	        this.exitCode = source["exitCode"];
+	    }
+	}
 	
 
 }

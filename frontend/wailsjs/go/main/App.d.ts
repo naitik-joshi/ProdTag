@@ -4,6 +4,10 @@ import {main} from '../models';
 
 export function CheckAudioTools():Promise<main.AudioToolsStatus>;
 
+export function CreateRule(arg1:main.RuleRequest):Promise<main.ConfigSnapshot>;
+
+export function DeleteRule(arg1:string):Promise<main.ConfigSnapshot>;
+
 export function DeleteSound(arg1:string):Promise<main.ConfigSnapshot>;
 
 export function DeleteSounds(arg1:Array<string>):Promise<main.ConfigSnapshot>;
@@ -13,6 +17,8 @@ export function GetSoundPreviewDataURL(arg1:string):Promise<string>;
 export function ImportSoundPaths(arg1:Array<string>):Promise<main.ConfigSnapshot>;
 
 export function ImportSoundWithPicker():Promise<main.ConfigSnapshot>;
+
+export function ListRules():Promise<main.ConfigSnapshot>;
 
 export function LoadConfig():Promise<main.ConfigSnapshot>;
 
@@ -27,3 +33,9 @@ export function RenameSound(arg1:main.RenameSoundRequest):Promise<main.ConfigSna
 export function SaveConfig(arg1:main.AppConfig):Promise<main.ConfigSnapshot>;
 
 export function SelectSoundFiles():Promise<Array<string>>;
+
+export function TestRuleSound(arg1:string):Promise<string>;
+
+export function ToggleRule(arg1:string,arg2:boolean):Promise<main.ConfigSnapshot>;
+
+export function UpdateRule(arg1:main.RuleRequest):Promise<main.ConfigSnapshot>;

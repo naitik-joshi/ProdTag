@@ -5,6 +5,8 @@ import {StatCard} from '../components/StatCard';
 import {AppConfig, AppDataPaths} from '../types/app';
 
 export function DashboardPage({config, paths}: {config: AppConfig; paths: AppDataPaths | null}) {
+  const enabledRules = config.rules.filter((rule) => rule.enabled).length;
+
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-3">
@@ -30,8 +32,8 @@ export function DashboardPage({config, paths}: {config: AppConfig; paths: AppDat
 
       <section className="grid gap-4 lg:grid-cols-4">
         <StatCard label="Sounds" value={config.sounds.length} />
-        <StatCard label="Playlists" value={config.playlists.length} />
         <StatCard label="Rules" value={config.rules.length} />
+        <StatCard label="Enabled rules" value={enabledRules} />
         <StatCard
           label="Shells"
           value={Object.values(config.integrations).filter((integration) => integration.installed).length}

@@ -64,16 +64,19 @@ type PlaylistRecord struct {
 }
 
 type RuleRecord struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Enabled     bool   `json:"enabled"`
-	Pattern     string `json:"pattern"`
-	MatchType   string `json:"matchType"`
-	Condition   string `json:"condition"`
-	SoundID     string `json:"soundId,omitempty"`
-	PlaylistID  string `json:"playlistId,omitempty"`
-	CooldownMs  int64  `json:"cooldownMs,omitempty"`
-	Probability int    `json:"probability,omitempty"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Enabled        bool   `json:"enabled"`
+	EventType      string `json:"eventType"`
+	SoundID        string `json:"soundId"`
+	MatchMode      string `json:"matchMode,omitempty"`
+	CommandPattern string `json:"commandPattern,omitempty"`
+	ExitCode       *int   `json:"exitCode,omitempty"`
+	CreatedAt      string `json:"createdAt"`
+	UpdatedAt      string `json:"updatedAt"`
+	PlaylistID     string `json:"playlistId,omitempty"`
+	CooldownMs     int64  `json:"cooldownMs,omitempty"`
+	Probability    int    `json:"probability,omitempty"`
 }
 
 type HotkeySettings struct {
@@ -270,6 +273,14 @@ func normalizeConfig(config AppConfig) AppConfig {
 	}
 	if config.Rules == nil {
 		config.Rules = []RuleRecord{}
+	}
+	for index := range config.Rules {
+		if config.Rules[index].CreatedAt == "" {
+			config.Rules[index].CreatedAt = config.UpdatedAt
+		}
+		if config.Rules[index].UpdatedAt == "" {
+			config.Rules[index].UpdatedAt = config.Rules[index].CreatedAt
+		}
 	}
 
 	return config

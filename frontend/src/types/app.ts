@@ -31,10 +31,13 @@ export type RuleRecord = {
   id: string;
   name: string;
   enabled: boolean;
-  pattern: string;
-  matchType: string;
-  condition: string;
-  soundId?: string;
+  eventType: string;
+  soundId: string;
+  matchMode?: string;
+  commandPattern?: string;
+  exitCode?: number | null;
+  createdAt: string;
+  updatedAt: string;
   playlistId?: string;
   cooldownMs?: number;
   probability?: number;
