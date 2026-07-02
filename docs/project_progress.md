@@ -82,9 +82,18 @@ ProdTag is a Wails v2 desktop app with a Go backend/helper direction and a React
   - Added stop-current-playback support and playback status reporting.
   - Added `HandleTerminalEvent`, which reuses the matcher, starts backend playback when enabled, records recent handled events, and returns playback status/error details.
   - Added config fields for `eventEngineEnabled`, `playbackEnabled`, `stopPreviousSoundOnNewEvent`, and optional `localEventPort`; defaults are enabled/enabled/stop previous.
-  - Rules simulator now has a full-path "Handle + play" action in addition to matcher-only simulation.
+  - Rules simulator now has a full event-flow test action in addition to matcher-only simulation.
   - Integrations page now shows event engine status, backend playback support/method, stop playback, and recent handled events.
-  - Local HTTP intake was deferred to Phase 4.1; the preferred route is local-only CLI/helper intake rather than remote/network exposure.
+  - Local HTTP/CLI intake was deferred to Phase 4.2; the preferred route is local-only CLI/helper intake rather than remote/network exposure.
+- Phase 4.1: UX cleanup and shell-ready information architecture.
+  - Addressed the Phase 4 UX audit without changing backend event behavior.
+  - Rules now focuses on rule count, New rule, and rule cards first; simulator and recent simulated events moved into a secondary collapsible area.
+  - New/Edit rule now opens in a visible modal so users do not need to scroll to find the form.
+  - Integrations now puts shell setup/status first, followed by event engine/playback status and collapsed handled-event diagnostics.
+  - Dashboard now shows compact readiness signals for event intake, playback, shell setup, sounds, ready/processed sounds, and rules.
+  - Settings runtime controls are grouped by event intake, sound playback, and startup so Listening, Event engine, Muted, and Backend playback are easier to distinguish.
+  - Long filesystem paths now use a compact filename/folder pattern with copy and details controls in core path-heavy areas.
+  - Hotkeys now clearly presents a planned-state message instead of looking like missing user configuration.
 
 ## Current UX Direction
 
@@ -102,7 +111,7 @@ ProdTag is a Wails v2 desktop app with a Go backend/helper direction and a React
 
 ## Next Up
 
-- Phase 4.1 helper and local shell integration intake planning.
+- Phase 4.2 helper and local shell integration intake planning.
 - Playlist/group assignment is still open from Phase 2 if it is needed before moving into helper playback.
 - The next technical boundary is sending real terminal events into `HandleTerminalEvent` through a local helper/CLI/shell integration.
 - Packaging note: the earlier Codex-side macOS `UTType` linker/package warning is considered resolved for now because the user manually ran `wails build` successfully and produced `build/bin/ProdTag.app`.

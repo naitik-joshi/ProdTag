@@ -1,4 +1,6 @@
+import {Keyboard} from 'lucide-react';
 import {Card} from '../components/Card';
+import {EmptyState} from '../components/EmptyState';
 import {AppConfig} from '../types/app';
 
 export function HotkeysPage({config}: {config: AppConfig}) {
@@ -12,6 +14,11 @@ export function HotkeysPage({config}: {config: AppConfig}) {
   return (
     <Card>
       <h2 className="text-lg font-semibold">Hotkeys</h2>
+      <EmptyState
+        icon={<Keyboard size={20} />}
+        title="Hotkeys are planned for Phase 6"
+        body="These shortcuts are shown as the intended controls, but global hotkeys are not active yet."
+      />
       <div className="mt-5 divide-y divide-neutral-100">
         {rows.map(([label, value]) => (
           <div key={label} className="flex items-center justify-between gap-4 py-3">

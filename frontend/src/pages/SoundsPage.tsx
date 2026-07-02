@@ -30,6 +30,7 @@ import {OnFileDrop, OnFileDropOff} from '../../wailsjs/runtime/runtime';
 import {Badge} from '../components/Badge';
 import {Button} from '../components/Button';
 import {Card} from '../components/Card';
+import {CompactPath} from '../components/CompactPath';
 import {ConfirmDialog} from '../components/ConfirmDialog';
 import {EmptyState} from '../components/EmptyState';
 import {IconButton} from '../components/IconButton';
@@ -639,14 +640,10 @@ function SoundCard({
               </span>
               <span className="text-sm text-neutral-500">Imported {formatDate(sound.createdAt)}</span>
             </div>
-            <div className="mt-3 rounded-lg bg-neutral-50 px-3 py-2">
-              <p className="break-all font-mono text-xs leading-5 text-neutral-500">{sound.originalPath}</p>
+            <div className="mt-3 grid gap-2">
+              <CompactPath label="Original copy" path={sound.originalPath} />
+              <CompactPath label="Processed WAV" path={sound.processedPath} tone="green" />
             </div>
-            {sound.processedPath && (
-              <div className="mt-2 rounded-lg bg-emerald-50 px-3 py-2">
-                <p className="break-all font-mono text-xs leading-5 text-emerald-700">Processed {sound.processedPath}</p>
-              </div>
-            )}
             {sound.error && <p className="mt-2 text-sm text-rose-700">{sound.error}</p>}
           </div>
         </div>

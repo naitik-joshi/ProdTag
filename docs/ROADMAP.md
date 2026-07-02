@@ -92,7 +92,7 @@ Notes:
 
 ## Phase 4 — Helper + Shell Integration
 
-Status: Phase 4.0 backend event/playback path complete; shell/helper integration remains.
+Status: Phase 4.1 UX cleanup complete; shell/helper integration remains.
 
 Goal: Make rules react to real terminal commands without requiring the UI to stay open.
 
@@ -104,6 +104,10 @@ Tasks:
 - [x] Add local event handling API that evaluates events, starts backend playback, and records recent handled events.
 - [x] Add listening/muted/playback config handling for the backend event path.
 - [x] Add stop-current-audio backend/UI action.
+- [x] Add shell-ready Dashboard readiness display.
+- [x] Clean up Rules information architecture before shell integration.
+- [x] Reorganize Integrations so shell setup is primary and diagnostics are secondary.
+- [x] Clarify runtime settings for listening, rule engine, muted audio, and backend playback.
 - [ ] Add helper status display in Dashboard.
 - [ ] Add zsh integration first.
 - [ ] Add bash integration.
@@ -120,7 +124,8 @@ Notes:
 
 - Phase 4.0 adds the local app backend path only: `HandleTerminalEvent` evaluates a terminal event, selects the matched sound, starts backend playback when enabled, and records an in-memory recent event entry.
 - Backend playback currently supports macOS via `afplay`; Windows/Linux playback methods are structured for later implementation.
-- Local HTTP intake was deferred to Phase 4.1. The preferred next step is a local-only CLI/helper receiver rather than exposing a remote listener.
+- Phase 4.1 addressed the UX audit: Rules now keeps management primary with simulator/logs secondary, New/Edit opens in a modal, Integrations is setup-first, Settings groups runtime controls, Dashboard shows readiness, and paths are compacted.
+- Local HTTP/CLI intake was deferred to Phase 4.2. The preferred next step is a local-only CLI/helper receiver rather than exposing a remote listener.
 
 ## Phase 5 — Rule Presets and Matching Polish
 

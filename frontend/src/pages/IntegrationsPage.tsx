@@ -5,6 +5,7 @@ import {GetPlaybackStatus, ListRecentEvents, StopPlayback} from '../../wailsjs/g
 import {Badge} from '../components/Badge';
 import {Button} from '../components/Button';
 import {Card} from '../components/Card';
+import {CollapsibleSection} from '../components/CollapsibleSection';
 import {AppConfig, PlaybackStatus, RecentEventRecord} from '../types/app';
 
 export function IntegrationsPage({config}: {config: AppConfig}) {
@@ -41,11 +42,38 @@ export function IntegrationsPage({config}: {config: AppConfig}) {
   return (
     <div className="space-y-6">
       <Card>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">Shell integrations</h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              Shell setup is not installed yet. This page is ready for install status and doctor checks in the next phase.
+            </p>
+          </div>
+          <Badge tone="neutral">Not installed</Badge>
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          {integrations.map(([name, integration]) => (
+            <div key={name} className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-base font-semibold">{name}</div>
+                <Badge tone={integration.installed ? 'green' : 'neutral'}>
+                  {integration.installed ? 'Installed' : 'Not installed'}
+                </Badge>
+              </div>
+              <div className="mt-3 text-sm text-neutral-500">
+                {integration.scope || 'Install, uninstall, and doctor checks will appear here.'}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold">Event engine</h2>
+            <h2 className="text-lg font-semibold">Event engine and playback</h2>
             <p className="mt-1 text-sm text-neutral-500">
-              Local event handling is ready for future shell integrations. No shell files are installed yet.
+              The in-app event path can already evaluate rules and play sounds; shell input arrives later.
             </p>
           </div>
           <Badge tone={config.eventEngineEnabled ? 'green' : 'amber'}>
@@ -70,7 +98,7 @@ export function IntegrationsPage({config}: {config: AppConfig}) {
             icon={<Plug size={17} />}
             label="Local intake"
             tone="neutral"
-            value="Deferred to Phase 4.1"
+            value="Coming next"
           />
         </div>
 
@@ -91,12 +119,15 @@ export function IntegrationsPage({config}: {config: AppConfig}) {
         )}
       </Card>
 
-      <Card>
-        <h2 className="text-lg font-semibold">Recent handled events</h2>
-        <div className="mt-4 grid gap-2">
+      <CollapsibleSection
+        action={<Badge>{recentEvents.length}</Badge>}
+        title="Recent handled events"
+        description="Diagnostics from the in-app event handling path."
+      >
+        <div className="grid gap-2">
           {recentEvents.length === 0 ? (
             <p className="rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-500">
-              No events handled yet. Use Handle + play in the Rules simulator to exercise the backend path.
+              No events handled yet. Use Test full event flow in the Rules simulator to exercise the backend path.
             </p>
           ) : (
             recentEvents.slice(0, 6).map((event) => (
@@ -117,26 +148,7 @@ export function IntegrationsPage({config}: {config: AppConfig}) {
             ))
           )}
         </div>
-      </Card>
-
-      <Card>
-        <h2 className="text-lg font-semibold">Shell integrations</h2>
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          {integrations.map(([name, integration]) => (
-            <div key={name} className="rounded-lg border border-neutral-200 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-base font-semibold">{name}</div>
-                <Badge tone={integration.installed ? 'green' : 'neutral'}>
-                  {integration.installed ? 'Installed' : 'Not installed'}
-                </Badge>
-              </div>
-              <div className="mt-3 text-sm text-neutral-500">
-                {integration.scope || 'Install and doctor checks will appear here.'}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+      </CollapsibleSection>
     </div>
   );
 }

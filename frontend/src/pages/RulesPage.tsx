@@ -15,6 +15,8 @@ import {
 import {Badge} from '../components/Badge';
 import {Button} from '../components/Button';
 import {Card} from '../components/Card';
+import {CollapsibleSection} from '../components/CollapsibleSection';
+import {CompactPath} from '../components/CompactPath';
 import {ConfirmDialog} from '../components/ConfirmDialog';
 import {EmptyState} from '../components/EmptyState';
 import {Toast, ToastState} from '../components/Toast';
@@ -265,7 +267,9 @@ export function RulesPage({config, onConfigUpdated}: RulesPageProps) {
     try {
       const result = await SimulateEvent(event);
       setSimulationResult(result as RuleMatchResult);
-      setToast({message: (result as RuleMatchResult).matched ? 'Event matched a rule' : 'No matching rule', tone: (result as RuleMatchResult).matched ? 'green' : 'neutral'});
+      if ((result as RuleMatchResult).matched) {
+        setToast({message: 'Event matched a rule', tone: 'green'});
+      }
       await refreshRecentEvents();
     } catch (error) {
       setToast({message: failureMessage(error), tone: 'rose'});
@@ -286,10 +290,12 @@ export function RulesPage({config, onConfigUpdated}: RulesPageProps) {
       const result = await HandleTerminalEvent(event);
       setSimulationResult(result as RuleMatchResult);
       const handled = result as RuleMatchResult;
-      setToast({
-        message: handled.playbackError || handled.message,
-        tone: handled.playbackError ? 'rose' : handled.matched ? 'green' : 'neutral',
-      });
+      if (handled.playbackError || handled.matched) {
+        setToast({
+          message: handled.playbackError || handled.message,
+          tone: handled.playbackError ? 'rose' : 'green',
+        });
+      }
       await refreshRecentEvents();
     } catch (error) {
       setToast({message: failureMessage(error), tone: 'rose'});
@@ -368,34 +374,6 @@ export function RulesPage({config, onConfigUpdated}: RulesPageProps) {
         {toast && <Toast toast={toast} onDismiss={() => setToast(null)} />}
       </Card>
 
-      <EventSimulator
-        form={simulator}
-        isPlaying={testingRuleId === 'simulation'}
-        isHandlingEvent={isHandlingEvent}
-        isSimulating={isSimulating}
-        recentEvents={recentEvents}
-        result={simulationResult}
-        onChange={setSimulator}
-        onClearRecent={clearRecentEvents}
-        onHandleEvent={handleEventWithPlayback}
-        onPlayMatchedSound={playSimulationSound}
-        onSimulate={simulateEvent}
-      />
-
-      {isFormOpen && (
-        <RuleForm
-          form={form}
-          selectedSound={selectedSound}
-          sounds={config.sounds}
-          isSaving={savingRuleId === (form.id ?? 'new')}
-          isTesting={testingRuleId === 'form'}
-          onCancel={closeForm}
-          onChange={setForm}
-          onSave={saveRule}
-          onTest={playSelectedSound}
-        />
-      )}
-
       {config.rules.length === 0 ? (
         <Card>
           <EmptyState
@@ -422,6 +400,39 @@ export function RulesPage({config, onConfigUpdated}: RulesPageProps) {
         </section>
       )}
 
+      <CollapsibleSection
+        title="Event simulator"
+        description="Test matching and the full backend playback path before shell setup exists."
+      >
+        <EventSimulator
+          form={simulator}
+          isPlaying={testingRuleId === 'simulation'}
+          isHandlingEvent={isHandlingEvent}
+          isSimulating={isSimulating}
+          recentEvents={recentEvents}
+          result={simulationResult}
+          onChange={setSimulator}
+          onClearRecent={clearRecentEvents}
+          onHandleEvent={handleEventWithPlayback}
+          onPlayMatchedSound={playSimulationSound}
+          onSimulate={simulateEvent}
+        />
+      </CollapsibleSection>
+
+      {isFormOpen && (
+        <RuleEditorModal
+          form={form}
+          selectedSound={selectedSound}
+          sounds={config.sounds}
+          isSaving={savingRuleId === (form.id ?? 'new')}
+          isTesting={testingRuleId === 'form'}
+          onCancel={closeForm}
+          onChange={setForm}
+          onSave={saveRule}
+          onTest={playSelectedSound}
+        />
+      )}
+
       {confirmRule && (
         <ConfirmDialog
           body={`This removes "${confirmRule.name}" from ProdTag. It does not delete any sound files.`}
@@ -432,6 +443,26 @@ export function RulesPage({config, onConfigUpdated}: RulesPageProps) {
           title="Delete rule?"
         />
       )}
+    </div>
+  );
+}
+
+function RuleEditorModal(props: {
+  form: RuleFormState;
+  sounds: SoundRecord[];
+  selectedSound: SoundRecord | null;
+  isSaving: boolean;
+  isTesting: boolean;
+  onCancel: () => void;
+  onChange: (form: RuleFormState) => void;
+  onSave: () => void;
+  onTest: () => void;
+}) {
+  return (
+    <div className="modal-backdrop">
+      <section aria-modal="true" className="rule-modal-panel" role="dialog">
+        <RuleForm {...props} />
+      </section>
     </div>
   );
 }
@@ -458,9 +489,9 @@ function RuleForm({
   onTest: () => void;
 }) {
   return (
-    <Card>
+    <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <h2 className="text-lg font-semibold">{form.id ? 'Edit rule' : 'Create rule'}</h2>
           <p className="mt-1 text-sm text-neutral-500">Choose the event and the sound ProdTag should play later.</p>
         </div>
@@ -473,6 +504,7 @@ function RuleForm({
         <label className="grid gap-2">
           <span className="text-sm font-semibold text-neutral-700">Rule name</span>
           <input
+            autoFocus
             className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-neutral-950"
             onChange={(event) => onChange({...form, name: event.target.value})}
             placeholder="Tests passed"
@@ -564,7 +596,7 @@ function RuleForm({
           {form.id ? 'Save rule' : 'Create rule'}
         </Button>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -594,12 +626,12 @@ function EventSimulator({
   onClearRecent: () => void;
 }) {
   return (
-    <Card>
+    <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold">Event simulator</h2>
+          <h2 className="text-base font-semibold">Test an event</h2>
           <p className="mt-1 text-sm text-neutral-500">
-            Test rule matching before shell integration exists.
+            Use simulated command data to check what would match, or run the full app playback path.
           </p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
@@ -607,7 +639,7 @@ function EventSimulator({
             Simulate
           </Button>
           <Button isLoading={isHandlingEvent} leftIcon={<Play size={16} />} onClick={onHandleEvent}>
-            Handle + play
+            Test full event flow
           </Button>
         </div>
       </div>
@@ -681,7 +713,7 @@ function EventSimulator({
         <p className="mt-3 rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-500">No simulated events yet.</p>
       ) : (
         <div className="mt-3 grid gap-2">
-          {recentEvents.map((event) => (
+          {recentEvents.slice(0, 5).map((event) => (
             <div key={event.id} className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
@@ -700,9 +732,12 @@ function EventSimulator({
               )}
             </div>
           ))}
+          {recentEvents.length > 5 && (
+            <p className="text-xs text-neutral-500">Showing the 5 most recent simulated events.</p>
+          )}
         </div>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -738,7 +773,7 @@ function SimulationResult({
   return (
     <div className={result.missingSound ? 'mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-3' : 'mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3'}>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
             {result.missingSound ? <XCircle size={16} /> : <CheckCircle2 size={16} />}
             {result.rule?.name || 'Matched rule'}
@@ -751,7 +786,11 @@ function SimulationResult({
               {result.playbackError ? `Playback error: ${result.playbackError}` : result.playbackStarted ? 'Backend playback started.' : result.message}
             </p>
           )}
-          {result.soundPath && <p className="mt-2 break-all font-mono text-xs text-neutral-500">{result.soundPath}</p>}
+          {result.soundPath && (
+            <div className="mt-3">
+              <CompactPath label="Matched sound file" path={result.soundPath} tone="green" />
+            </div>
+          )}
         </div>
         <Button disabled={!result.sound} isLoading={isPlaying} leftIcon={<Play size={15} />} onClick={onPlayMatchedSound} variant="success">
           Play
@@ -801,9 +840,9 @@ function RuleCard({
             {rule.exitCode !== null && rule.exitCode !== undefined && <span>- exit {rule.exitCode}</span>}
           </div>
           {sound ? (
-            <p className="mt-3 break-all rounded-lg bg-neutral-50 px-3 py-2 font-mono text-xs leading-5 text-neutral-500">
-              {sound.processedPath || sound.originalPath}
-            </p>
+            <div className="mt-3">
+              <CompactPath label="Assigned sound" path={sound.processedPath || sound.originalPath} tone={sound.processedPath ? 'green' : 'neutral'} />
+            </div>
           ) : (
             <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
               This rule points to a sound that is no longer in the library.
